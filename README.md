@@ -9,7 +9,9 @@ make
 ## Things you should have before running this tool
  1. You should have a u-boot image "u-boot-dtb.img" from
     http://builds.96boards.org/snapshots/bubblegum/linaro/u-boot/latest/
- 2. You should have a Debian rootfs "bubblegum-jessie_*.emmc.img" from
+ 2. You should have a boot img "boot.emmc.img" from
+    http://builds.96boards.org/snapshots/bubblegum/linaro/debian/latest/
+ 3. You should have a Debian rootfs "bubblegum-jessie_*.emmc.img" from
     http://builds.96boards.org/snapshots/bubblegum/linaro/debian/latest/
 
 ## How to de-brick Bubblegum-96
@@ -41,7 +43,7 @@ make
  
  7. Run “fastboot usb” in serial console to entering the fastboot mode.
 
- 8. Run “fastboot flash BOOT boot.fat16.img” on host computer.
+ 8. Run “fastboot flash BOOT boot.emmc.img” on host computer.
 
  9. Run “fastboot flash SYSTEM bubblegum-jessie_*.emmc.img” on host computer.
 
@@ -54,7 +56,6 @@ make
  13. "sudo dd if=bootloader.bin of=/dev/mmcblk0 seek=4097 bs=512"
      bootloader.bin can be found in the de-brick tool.
 
- 14. "sudo apt-get install u-boot-linaro-bubblegum96"
-     "sudo dd if=/usr/lib/u-boot/s900_96board/u-boot-dtb.img of=/dev/mmcblk0 seek=6144 bs=512"
+ 14. "sudo dd if=u-boot-dtb.img of=/dev/mmcblk0 seek=6144 bs=512"
 
  15. Reboot.
