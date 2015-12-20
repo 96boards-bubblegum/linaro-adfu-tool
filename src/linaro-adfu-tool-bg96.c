@@ -604,6 +604,10 @@ libusb_device_handle* start(int argc, char **argv) {
 
   libusb_close(handler);
   handler = b96_init_device();
+  if (handler == NULL) {
+    return NULL;
+  }
+
   setuid(getuid());
 
   if (find_firmware("bl31.bin", firmwareFilename, sizeof(firmwareFilename))==NULL) {
@@ -640,11 +644,10 @@ int main(int argc, char **argv) {
   }
   libusb_device_handle *handler = NULL;
   handler = start(argc, argv);
-  if (handler == NULL) {
-    return 0;
+  if (handler != NULL) {
+    b96_uninit_device(handler);
+    handler=NULL;
   }
-  b96_uninit_device(handler);
-  handler=NULL;
   b96_uninit_usb();
   
   return 0;
