@@ -497,7 +497,7 @@ void unknownCMD50(libusb_device_handle *handler) {
   readCSW(handler);
 }
 
-char * getbinpath(char *buf, int size) {
+char* getbinpath(char *buf, int size) {
   char path[4096];
   char dest[4096];
   pid_t pid = getpid();
@@ -510,7 +510,7 @@ char * getbinpath(char *buf, int size) {
   return buf;
 }
 
-char * getbindirectory(char *buf,int size) {
+char* getbindirectory(char *buf, int size) {
   char path[4096];
   char *c;
   char *dir;
@@ -534,18 +534,48 @@ char * getbindirectory(char *buf,int size) {
   return buf;
 }
 
-libusb_device_handle* start(int argc,char **argv) {
+char* find_firmware(const char *filename, char *firmwareFilename, int firmwareFilenameSize) {
+  char *listOfDataDirectory[] = { NULL, "/usr/local/share/linaro-adfu-tool-bg96/firmwares", "/usr/share/linaro-adfu-tool-bg96/firmwares", "./firmwares", "../firmwares" };
+  char dataDirectory[4096];
+  int i;
+  struct stat fileStat;
+
+  listOfDataDirectory[0] = dataDirectory;
+
+  if (getbindirectory(dataDirectory,sizeof(dataDirectory))==NULL) {
+    error_at_line(0,0,__FILE__,__LINE__,"Cannot get executable directory");
+    dataDirectory[0]='.';
+    dataDirectory[1]='\0';
+  } else {
+    strncat(dataDirectory,"../firmwares",sizeof(dataDirectory));
+  }
+
+  for (i=0; i<sizeof(listOfDataDirectory)/sizeof(listOfDataDirectory[0]); i++) {
+    int r1;
+    memset(&fileStat,0,sizeof(fileStat));
+    snprintf(firmwareFilename, firmwareFilenameSize, "%s/%s", listOfDataDirectory[i], filename);
+    r1 = stat(firmwareFilename, &fileStat);
+    if (r1 != 0) {
+      continue;
+    }
+    if ( (!S_ISREG(fileStat.st_mode))
+	 && (!S_ISLNK(fileStat.st_mode))
+	 && (!S_ISFIFO(fileStat.st_mode))
+	 ) {
+      continue;
+    }
+    printf ("Use %s for %s\n", firmwareFilename, filename);
+    return firmwareFilename;
+  }
+  error_at_line(0,0,__FILE__,__LINE__, "Cannot find %s", filename);
+  memset(firmwareFilename,0,firmwareFilenameSize);
+  return NULL;
+}
+
+libusb_device_handle* start(int argc, char **argv) {
   libusb_device_handle *handler = NULL;
   int r1=0;
-  char dataDirectory[4096];
   char firmwareFilename[4096];
-  if (getbindirectory(dataDirectory,sizeof(dataDirectory))==NULL) {
-    printf ("Cannot get data directory\n");
-    dataDirectory[0]='\0';
-  } else {
-    strncat(dataDirectory,"../firmwares/",sizeof(dataDirectory));
-  }
-  printf ("Firmware Directory: %s\n",dataDirectory);
   
   b96_init_usb();
   handler = b96_init_device();
@@ -555,11 +585,17 @@ libusb_device_handle* start(int argc,char **argv) {
  
   printf ("Handler: %p\n",handler);
 
-  snprintf(firmwareFilename, sizeof(firmwareFilename), "%s%s",dataDirectory, "adfudec.bin");
+  if (find_firmware("adfudec.bin", firmwareFilename, sizeof(firmwareFilename))==NULL) {
+    error_at_line(0,0,__FILE__,__LINE__, "Error: Cannot find adfudec.bin");
+    return handler;
+  }
   writeBinaryFile(handler, '\x05', 0xe406f000, firmwareFilename, 0, NULL);
   sleep(1);
 
-  snprintf(firmwareFilename, sizeof(firmwareFilename), "%s%s",dataDirectory, "bootloader.bin");
+  if (find_firmware("bootloader.bin", firmwareFilename, sizeof(firmwareFilename))==NULL) {
+    error_at_line(0,0,__FILE__,__LINE__, "Error: Cannot find bootloader.bin");
+    return handler;
+  }
   writeBinaryFileSeek(handler, '\x05', 0xe406e000, firmwareFilename, 0x1000, 4096, 0, NULL);
   sleep(1);
 
@@ -568,12 +604,19 @@ libusb_device_handle* start(int argc,char **argv) {
 
   libusb_close(handler);
   handler = b96_init_device();
+  setuid(getuid());
 
-  snprintf(firmwareFilename, sizeof(firmwareFilename), "%s%s",dataDirectory, "bl31.bin");
+  if (find_firmware("bl31.bin", firmwareFilename, sizeof(firmwareFilename))==NULL) {
+    error_at_line(0,0,__FILE__,__LINE__, "Error: Cannot find bl31.bin");
+    return handler;
+  }
   writeBinaryFile(handler, '\xcd' ,0x13, firmwareFilename,  0x1f000000, NULL);
 
-  snprintf(firmwareFilename, sizeof(firmwareFilename), "%s%s",dataDirectory, "bl32.bin");
-  writeBinaryFile(handler, '\xcd', 0x13, firmwareFilename,  0x1f202000, NULL);
+  if (find_firmware("bl32.bin", firmwareFilename, sizeof(firmwareFilename))==NULL) {
+    error_at_line(0,0,__FILE__,__LINE__, "Error: Cannot find bl32.bin");
+    return handler;
+  }
+  writeBinaryFile(handler, '\xcd', 0x13, firmwareFilename, 0x1f202000, NULL);
   
   writeBinaryFile(handler, '\xcd', 0x13, argv[1], 0x10ffffc0, NULL);
   sleep(2);
@@ -587,16 +630,16 @@ libusb_device_handle* start(int argc,char **argv) {
 }
 
 void usage(int argc, char **argv) {
-  printf ("Usage: %s <u-boot-dtb.img>\n",argv[0]);
+  printf ("Usage: %s <u-boot-dtb.img>\n", argv[0]);
 }
 
-int main(int argc,char **argv) {
+int main(int argc, char **argv) {
   if (argc < 2) {
     usage(argc, argv);
     return 2;
   }
   libusb_device_handle *handler = NULL;
-  handler = start(argc,argv);
+  handler = start(argc, argv);
   if (handler == NULL) {
     return 0;
   }
