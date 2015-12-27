@@ -49,7 +49,7 @@ make
 
  10. Redo the step 3 to 5.
 
- 11. Run “fatload mmc 1:2 ${scriptaddr} boot.scr; source ${scriptaddr}”
+ 11. Run “setenv bootpart 2; boot”
 
  12. You should be able to login into Debian.
 
