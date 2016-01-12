@@ -16,7 +16,7 @@ make
 
 ## How to de-brick Bubblegum-96
 
- 1. Connect the serial console
+ 1. Connect the serial console. Baud rate is 115200,8n1.
 
  2. Connect USB cable.
 
