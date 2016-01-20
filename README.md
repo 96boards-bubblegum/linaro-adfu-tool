@@ -32,13 +32,7 @@ make
     break it and entering the u-boot shell.
 
  6. Use the following command to re-construct the gpt table:
-    setenv uuid_gpt_disk e9d6dc79-fad4-48a0-a38c-f1817663e943
-    setenv uuid_uboot 79080809-6905-4b7c-bb72-ad67a590e184
-    setenv uuid_boot 4e38916b-e416-478e-95d3-f5759b67e83b
-    setenv uuid_system 6a65fe5e-0c68-4396-a2ba-291a919c30f0
-    setenv uuid_swap 99f7ba03-3a0b-461b-bba1-3e3a963c81c8
-    setenv uuid_boot_msg 1cd1f387-29fd-43b7-80a0-593c5e23e7c4
-    setenv partitions "uuid_disk=${uuid_gpt_disk};name=UBOOT,size=8MiB,uuid=${uuid_uboot};name=BOOT,size=50MiB,uuid=${uuid_boot};name=SYSTEM,size=6500MiB,uuid=${uuid_system};name=SWAP,size=768MiB,uuid=${uuid_swap};name=BOOT_MSG,size=-,uuid=${uuid_boot_msg};"
+    setenv partitions "name=BOOTLOADER,size=8MiB;name=BOOT,size=50MiB;name=SYSTEM,size=6500MiB;name=SWAP,size=768MiB;name=BOOT_MSG,size=-;"
     gpt write mmc 1 ${partitions}
  
  7. Run “fastboot usb” in serial console to entering the fastboot mode.
