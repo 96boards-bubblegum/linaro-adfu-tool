@@ -117,7 +117,7 @@ if __name__ == '__main__':
 
     for image in imageList:
         with open(filename, 'rb') as f:
-            with open(filename.rstrip(".fw")+"."+image[0]+"."+image[1]+'.img', 'wb') as fo:
+            with open(filename.rstrip(".fw")+"."+image[0]+"."+image[1]+'.emmc.img', 'wb') as fo:
                 f.seek(image[2], 0)
                 readLen = image[3]
                 while (readLen > 0):
