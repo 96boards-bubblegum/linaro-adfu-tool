@@ -60,7 +60,6 @@ libusb_device_handle* b96_init_device(void) {
   int r1;
   int c1;
   struct libusb_device_descriptor desc;
-  char buf[1024];
   int i;
 
   handler = libusb_open_device_with_vid_pid(libusb_ctx, 0x10d6, 0x10d6);
@@ -362,7 +361,6 @@ void writeBinaryFile(libusb_device_handle *handler,
   struct stat stat1;
   unsigned int len=0;
   int r1;
-  int i;
   
   memset (&stat1,0,sizeof(stat1));
   
@@ -371,8 +369,13 @@ void writeBinaryFile(libusb_device_handle *handler,
     error_at_line(0,0,__FILE__,__LINE__,"Error: cannot read file %s",filename);
     return;
   }
-  fstat(fileno(file1), &stat1);
+  r1 = fstat(fileno(file1), &stat1);
   fclose(file1);
+  file1 = NULL;
+  if (r1 != 0) {
+    error_at_line(0,0,__FILE__,__LINE__,"Error: cannot read file stat %s",filename);
+    return;
+  }
   len = (unsigned int)stat1.st_size;
   writeBinaryFileSeek(handler,cmd,sector,filename,0,len,sector2,flags);
   
@@ -382,7 +385,6 @@ void unknownCMD07(libusb_device_handle *handler) {
   unsigned char data[1024];
   int transferred;
   int r1;
-  unsigned char buf1[4096];
   int i;
   int len=0;
 
@@ -423,9 +425,9 @@ void unknownCMD07(libusb_device_handle *handler) {
   data[22] = (len/256/256)%256;
   data[23] = (len/256/256/256)%256;
 
-  printf ("data: \n");
+  printf ("CBW:");
   for (i=0; i<31; i++) {
-    printf ("%02x ", data[i]);
+    printf (" %02x", data[i]);
   }
   printf ("\n");
   transferred=0;
@@ -442,7 +444,6 @@ void unknownCMD50(libusb_device_handle *handler) {
   unsigned char data[1024];
   int transferred;
   int r1;
-  unsigned char buf1[4096];
   int i;
   int len=0;
 
@@ -485,9 +486,9 @@ void unknownCMD50(libusb_device_handle *handler) {
 
   data[27] = '\x1f';
 
-  printf ("data: \n");
+  printf ("CBW:");
   for (i=0; i<31; i++) {
-    printf ("%02x ", data[i]);
+    printf (" %02x", data[i]);
   }
   printf ("\n");
   transferred=0;
@@ -577,7 +578,6 @@ char* find_firmware(const char *filename, char *firmwareFilename, int firmwareFi
 
 libusb_device_handle* start(int argc, char **argv) {
   libusb_device_handle *handler = NULL;
-  int r1=0;
   char firmwareFilename[4096];
   
   handler = b96_init_device();
@@ -590,14 +590,14 @@ libusb_device_handle* start(int argc, char **argv) {
     error_at_line(0,0,__FILE__,__LINE__, "Error: Cannot find adfudec.bin");
     return handler;
   }
-  writeBinaryFile(handler, '\x05', 0xe406f000, firmwareFilename, 0, NULL);
+  writeBinaryFile(handler, '\x05', 0xe406f000u, firmwareFilename, 0, NULL);
   sleep(1);
 
   if (find_firmware("bootloader.bin", firmwareFilename, sizeof(firmwareFilename))==NULL) {
     error_at_line(0,0,__FILE__,__LINE__, "Error: Cannot find bootloader.bin");
     return handler;
   }
-  writeBinaryFileSeek(handler, '\x05', 0xe406e000, firmwareFilename, 0x1000, 4096, 0, NULL);
+  writeBinaryFileSeek(handler, '\x05', 0xe406e000u, firmwareFilename, 0x1000, 4096, 0, NULL);
   sleep(1);
 
   unknownCMD07(handler);
@@ -614,15 +614,15 @@ libusb_device_handle* start(int argc, char **argv) {
     error_at_line(0,0,__FILE__,__LINE__, "Error: Cannot find bl31.bin");
     return handler;
   }
-  writeBinaryFile(handler, '\xcd' ,0x13, firmwareFilename,  0x1f000000, NULL);
+  writeBinaryFile(handler, '\xcd' ,0x13, firmwareFilename,  0x1f000000u, NULL);
 
   if (find_firmware("bl32.bin", firmwareFilename, sizeof(firmwareFilename))==NULL) {
     error_at_line(0,0,__FILE__,__LINE__, "Error: Cannot find bl32.bin");
     return handler;
   }
-  writeBinaryFile(handler, '\xcd', 0x13, firmwareFilename, 0x1f202000, NULL);
+  writeBinaryFile(handler, '\xcd', 0x13, firmwareFilename, 0x1f202000u, NULL);
   
-  writeBinaryFile(handler, '\xcd', 0x13, argv[1], 0x10ffffc0, NULL);
+  writeBinaryFile(handler, '\xcd', 0x13, argv[1], 0x10ffffc0u, NULL);
   sleep(2);
   
   unknownCMD50(handler);
