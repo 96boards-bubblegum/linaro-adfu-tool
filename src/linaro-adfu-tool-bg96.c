@@ -97,7 +97,7 @@ libusb_device_handle* b96_init_device(void) {
 
   r1 = libusb_detach_kernel_driver(handler, 0);
   if (r1 != 0) {
-    error_at_line(0,0,__FILE__,__LINE__,"Error: cannot detach kernel driver");
+    error_at_line(0,0,__FILE__,__LINE__,"Info: cannot detach kernel driver");
   }
   
   c1 = 0;
