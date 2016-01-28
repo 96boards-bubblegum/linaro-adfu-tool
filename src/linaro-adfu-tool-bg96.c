@@ -97,7 +97,17 @@ libusb_device_handle* b96_init_device(void) {
 
   r1 = libusb_detach_kernel_driver(handler, 0);
   if (r1 != 0) {
-    error_at_line(0,0,__FILE__,__LINE__,"Info: cannot detach kernel driver");
+    const char *errorStr="unknown";
+    if (r1 == LIBUSB_ERROR_NOT_FOUND) {
+      errorStr = "LIBUSB_ERROR_NOT_FOUND (no worry)";
+    } else if (r1 == LIBUSB_ERROR_INVALID_PARAM) {
+      errorStr = "LIBUSB_ERROR_INVALID_PARAM";
+    } else if (r1 == LIBUSB_ERROR_NO_DEVICE) {
+      errorStr = "LIBUSB_ERROR_NO_DEVICE";
+    } else if (r1 == LIBUSB_ERROR_NOT_SUPPORTED) {
+      errorStr = "LIBUSB_ERROR_NOT_SUPPORTED";
+    }
+    error_at_line(0,0,__FILE__,__LINE__,"Info: cannot detach kernel driver: %s", errorStr);
   }
   
   c1 = 0;
