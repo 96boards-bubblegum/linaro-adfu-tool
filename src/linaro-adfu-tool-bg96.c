@@ -450,7 +450,10 @@ void unknownCMD07(libusb_device_handle *handler) {
   readCSW(handler);
 }
 
-void unknownCMD50(libusb_device_handle *handler) {
+/**
+ * Switch to EL2 and jump to addr
+ */
+void unknownCMD50(libusb_device_handle *handler, unsigned int addr) {
   unsigned char data[1024];
   int transferred;
   int r1;
@@ -494,7 +497,10 @@ void unknownCMD50(libusb_device_handle *handler) {
   data[22] = (len/256/256)%256;
   data[23] = (len/256/256/256)%256;
 
-  data[27] = '\x1f';
+  data[24] = addr%256;
+  data[25] = (addr/256)%256;
+  data[26] = (addr/256/256)%256;
+  data[27] = (addr/256/256/256)%256;
 
   printf ("CBW:");
   for (i=0; i<31; i++) {
@@ -624,18 +630,23 @@ libusb_device_handle* start(int argc, char **argv) {
     error_at_line(0,0,__FILE__,__LINE__, "Error: Cannot find bl31.bin");
     return handler;
   }
+  /* load bl31.bin to 0x1f000000 */
   writeBinaryFile(handler, '\xcd' ,0x13, firmwareFilename,  0x1f000000u, NULL);
 
   if (find_firmware("bl32.bin", firmwareFilename, sizeof(firmwareFilename))==NULL) {
     error_at_line(0,0,__FILE__,__LINE__, "Error: Cannot find bl32.bin");
     return handler;
   }
+  /* load bl32.bin to 0x1f202000 */
   writeBinaryFile(handler, '\xcd', 0x13, firmwareFilename, 0x1f202000u, NULL);
-  
+
+  /* load u-boot-dtb.img to 0x10ffffc0. (Note: u-boot is at 0x11000000,
+     -0x40 is the header */
   writeBinaryFile(handler, '\xcd', 0x13, argv[1], 0x10ffffc0u, NULL);
   sleep(2);
-  
-  unknownCMD50(handler);
+
+  /* jump to 0x1f000000 (bl31.bin)*/
+  unknownCMD50(handler, 0x1f000000u);
   sleep(2);
 
   libusb_close(handler);
