@@ -67,17 +67,21 @@
  can first use tools/extract_actions_fw.py to de-compose Actions' firmware to
  fastboot images.
 
- For Actions' Android image. You should alter the gpt tables by:
+#### Actions' Android image.
+
+ We should alter the gpt tables by:
  
-   1. setenv partitions "name=MISC,size=48MiB,start=8MiB;name=RECOVERY,size=48MiB;name=SYSTEM,size=1560MiB;name=BOOT_MSG,size=1MiB;name=DATA,size=2048MiB;name=CACHE,size=512MiB;name=DATA_BAK,size=1MiB;name=VENDOR_APP,size=1MiB;name=MNT_MEDIA,size=1MiB;name=SWAP,size=1MiB;name=UDISK,size=-;"
-   2. gpt write mmc 1 ${partitions}
+ 1. setenv partitions "name=MISC,size=48MiB,start=8MiB;name=RECOVERY,size=48MiB;name=SYSTEM,size=1560MiB;name=BOOT_MSG,size=1MiB;name=DATA,size=2048MiB;name=CACHE,size=512MiB;name=DATA_BAK,size=1MiB;name=VENDOR_APP,size=1MiB;name=MNT_MEDIA,size=1MiB;name=SWAP,size=1MiB;name=UDISK,size=-;"
+ 2. gpt write mmc 1 ${partitions}
    
  And then flash MISC, RECOVERY, and SYSTEM partitions by fastboot.
 
- For Actions' Debian image. You should alter the gpt tables by:
+#### Actions' Debian image.
+
+ We should alter the gpt tables by:
  
-   1. setenv partitions "name=MISC,size=50MiB,start=8MiB;name=SYSTEM,size=6500MiB;name=SWAP,size=768MiB;name=BOOT_MSG,size=-;"
-   2. gpt write mmc 1 ${partitions}
+ 1. setenv partitions "name=MISC,size=50MiB,start=8MiB;name=SYSTEM,size=6500MiB;name=SWAP,size=768MiB;name=BOOT_MSG,size=-;"
+ 2. gpt write mmc 1 ${partitions}
    
  And then flash MISC and SYSTEM partitions by fastboot.
 
