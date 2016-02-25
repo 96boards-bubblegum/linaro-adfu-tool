@@ -33,8 +33,10 @@
     break it and entering the u-boot shell.
 
  6. Use the following command to re-construct the gpt table:
+    ~~~
     setenv partitions "name=BOOTLOADER,size=8MiB;name=BOOT,size=50MiB;name=SYSTEM,size=6500MiB;name=SWAP,size=768MiB;name=BOOT_MSG,size=-;"
     gpt write mmc 1 ${partitions}
+    ~~~
  
  7. Run “fastboot usb” in serial console to entering the fastboot mode.
 
@@ -55,7 +57,7 @@
 
  15. Reboot.
 
- De-brick done.
+De-brick done.
 
 ## TODO
 
