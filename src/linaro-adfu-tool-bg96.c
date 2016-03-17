@@ -30,6 +30,21 @@
 
 #include <libusb.h>
 
+#define BOOTLOADER_PACK_STRUCT_OFFSET (0xc00)
+
+struct boot_partition {
+  char name[16];
+  unsigned int size;
+  unsigned int offset;
+  unsigned int addr;
+  unsigned char resv[36];
+};
+
+struct bootloader_info {
+  char resv[64];
+  struct boot_partition part[10];
+};
+
 libusb_context *libusb_ctx=NULL;
 
 /**
@@ -592,6 +607,86 @@ char* find_firmware(const char *filename, char *firmwareFilename, int firmwareFi
   return NULL;
 }
 
+int get_bootloader_info(const char *filename, struct bootloader_info *boot_info) {
+  int ret;
+  FILE *fp = NULL;
+  unsigned char buf[704];
+  int i;
+
+
+  fp = fopen(filename, "rb");
+  if (fp == NULL) {
+    error_at_line(0,0,__FILE__,__LINE__, "Error: Cannot open %s", filename);
+    return -1;
+  }
+
+  ret = fseek(fp, BOOTLOADER_PACK_STRUCT_OFFSET, SEEK_SET);
+  if (ret < 0) {
+    error_at_line(0,0,__FILE__,__LINE__, "Error: seek err");
+    return -1;
+  }
+
+  memset (boot_info, 0, sizeof(struct bootloader_info));
+  ret = fread(buf, 1, 704, fp);
+  if (ret != sizeof(struct bootloader_info)) {
+    error_at_line(0,0,__FILE__,__LINE__, "Error: read pack info err");
+    return -1;
+  }
+  memcpy(boot_info->resv, buf, 64);
+  for (i=0; i<10; i++) {
+    memcpy(boot_info->part[i].name, &(buf[64+i*64]), 16);
+    boot_info->part[i].size = (((unsigned int)(buf[64+i*64+16])) & 0x00ff)
+      + ((((unsigned int)(buf[64+i*64+17])) & 0x00ff) << 8)
+      + ((((unsigned int)(buf[64+i*64+18])) & 0x00ff) << 16)
+      + ((((unsigned int)(buf[64+i*64+19])) & 0x00ff) << 24);
+    boot_info->part[i].offset = (((unsigned int)(buf[64+i*64+20])) & 0x00ff)
+      + ((((unsigned int)(buf[64+i*64+21])) & 0x00ff) << 8)
+      + ((((unsigned int)(buf[64+i*64+22])) & 0x00ff) << 16)
+      + ((((unsigned int)(buf[64+i*64+23])) & 0x00ff) << 24);
+    boot_info->part[i].addr = (((unsigned int)(buf[64+i*64+24])) & 0x00ff)
+      + ((((unsigned int)(buf[64+i*64+25])) & 0x00ff) << 8)
+      + ((((unsigned int)(buf[64+i*64+26])) & 0x00ff) << 16)
+      + ((((unsigned int)(buf[64+i*64+27])) & 0x00ff) << 24);
+    memcpy(boot_info->part[i].resv, &(buf[64+i*64+28]), 36);
+  }
+  fclose(fp);
+  return 0;
+}
+
+int writeBootloaderBin(libusb_device_handle *handler, const char *filename) {
+  int i, found = 0;
+
+  struct bootloader_info boot_info;
+  memset (&boot_info, 0, sizeof(boot_info));
+
+  if (get_bootloader_info(filename, &boot_info) != 0) {
+    return -1;
+  }
+
+  for (i = 0; i < 10; i++) {
+    if (!strncmp(boot_info.part[i].name, "bootloader.ini", 13)) {
+      found = 1;
+      break;
+    }
+  }
+
+  if (!found) {
+    error_at_line(0,0,__FILE__,__LINE__, "Error: faild to find para");
+    return -1;
+  }
+
+  printf ("info: name(%s) addr(0x%x) offset(0x%x) size(%d)\n",
+	  boot_info.part[i].name,
+	  boot_info.part[i].addr,
+	  boot_info.part[i].offset << 9,
+	  boot_info.part[i].size << 9);
+
+  writeBinaryFileSeek(handler, '\x05', 0xe406e000, filename,
+		      boot_info.part[i].offset << 9,
+		      boot_info.part[i].size << 9, 0, NULL);
+  return 0;
+}
+
 libusb_device_handle* start(int argc, char **argv) {
   libusb_device_handle *handler = NULL;
   char firmwareFilename[4096];
@@ -613,7 +708,7 @@ libusb_device_handle* start(int argc, char **argv) {
     error_at_line(0,0,__FILE__,__LINE__, "Error: Cannot find bootloader.bin");
     return handler;
   }
-  writeBinaryFileSeek(handler, '\x05', 0xe406e000u, firmwareFilename, 0x1000, 4096, 0, NULL);
+  writeBootloaderBin(handler, firmwareFilename);
   sleep(1);
 
   unknownCMD07(handler);
