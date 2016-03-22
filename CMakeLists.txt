@@ -9,4 +9,4 @@ set(CPACK_SOURCE_GENERATOR "TXZ")
 set(CPACK_SOURCE_IGNORE_FILES "/build/;/.git/;~$;${CPACK_SOURCE_IGNORE_FILES};.*.cmake$;CMakeCache.txt;CMakeFiles;_CPack_Packages;Makefile;.*.tar.xz;install_manifest.txt")
 include(CPack)
 
-install (DIRECTORY ${PROJECT_BINARY_DIR}/firmwares DESTINATION share/${PROJECT_NAME})
+install (DIRECTORY ${PROJECT_SOURCE_DIR}/firmwares DESTINATION share/linaro-adfu-tool/bg96)
