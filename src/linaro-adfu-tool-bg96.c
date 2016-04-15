@@ -342,7 +342,7 @@ void writeBinaryFileSeek(libusb_device_handle *handler,
   if (transferred != 31) {
     error_at_line(0,0,__FILE__,__LINE__,"Error: transferred %d != 31",transferred);
   }
-  sleep(1);
+  usleep(100);
 
   
   for (tLen = len; tLen > 0 && !feof(file1); ) {
@@ -365,7 +365,7 @@ void writeBinaryFileSeek(libusb_device_handle *handler,
       error_at_line(0,0,__FILE__,__LINE__,"Error: transferred %d != rLen = %d",transferred,rLen);
       break;
     }
-    sleep(1);
+    usleep(100);
     printf ("Bulk transferred %d bytes\n",rLen);
     tLen -= rLen;
   }
@@ -702,17 +702,18 @@ libusb_device_handle* start(int argc, char **argv) {
     return handler;
   }
   writeBinaryFile(handler, '\x05', 0xe406f000u, firmwareFilename, 0, NULL);
-  sleep(1);
+  usleep(100);
 
   if (find_firmware("bootloader.bin", firmwareFilename, sizeof(firmwareFilename))==NULL) {
     error_at_line(0,0,__FILE__,__LINE__, "Error: Cannot find bootloader.bin");
     return handler;
   }
   writeBootloaderBin(handler, firmwareFilename);
-  sleep(1);
+  usleep(100);
 
   unknownCMD07(handler);
-  sleep(10);
+  /* FIXME: wait enough long to get firmware up and running, or better poll status? */
+  sleep(1);
 
   libusb_close(handler);
   handler = b96_init_device();
@@ -738,11 +739,11 @@ libusb_device_handle* start(int argc, char **argv) {
   /* load u-boot-dtb.img to 0x10ffffc0. (Note: u-boot is at 0x11000000,
      -0x40 is the header */
   writeBinaryFile(handler, '\xcd', 0x13, argv[1], 0x10ffffc0u, NULL);
-  sleep(2);
+  usleep(100);
 
   /* jump to 0x1f000000 (bl31.bin)*/
   unknownCMD50(handler, 0x1f000000u);
-  sleep(2);
+  usleep(100);
 
   libusb_close(handler);
   handler = NULL;
