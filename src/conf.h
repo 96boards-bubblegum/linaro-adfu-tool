@@ -27,4 +27,4 @@ struct adfu_conf {
   int boot_kernel_enable;
 };
 
-int adfu_parse_conf(struct adfu_conf *conf);
+int adfu_parse_conf(struct adfu_conf *conf, char *file);

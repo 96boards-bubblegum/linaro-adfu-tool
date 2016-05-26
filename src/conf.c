@@ -25,14 +25,14 @@
 
 #define ADFU_CONF_ERR(name)  do {fprintf(stderr, "No '%s' in config file\n", name); goto err; } while(0)
 
-int adfu_parse_conf(struct adfu_conf *conf)
+int adfu_parse_conf(struct adfu_conf *conf, char *file)
 {
   config_t cfg;
 
   config_init(&cfg);
 
   /* Read the file. If there is an error, report it and exit. */
-  if(! config_read_file(&cfg, "linaro-adfu-tool.conf"))
+  if(! config_read_file(&cfg, file))
   {
     fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg),
             config_error_line(&cfg), config_error_text(&cfg));
@@ -44,6 +44,7 @@ int adfu_parse_conf(struct adfu_conf *conf)
   if(!config_lookup_string(&cfg, "uboot", &conf->uboot))
     ADFU_CONF_ERR("uboot");
 
+  fprintf(stdout, "  uboot: %s\n", conf->uboot);
 
   if(!config_lookup_int(&cfg, "boot_kernel_enable", &conf->boot_kernel_enable))
     ADFU_CONF_ERR("boot_kernel_enable");
@@ -58,12 +59,17 @@ int adfu_parse_conf(struct adfu_conf *conf)
 
     if(!config_lookup_string(&cfg, "ramdisk", &conf->ramdisk))
       ADFU_CONF_ERR("ramdisk");
-  }
-#if 1
-  fprintf(stdout, "uboot(%s), kernel(%s), dtb(%s), ramdisk(%s), boot_kernel_enable(%d)\n",
-    conf->uboot, conf->kernel, conf->dtb, conf->ramdisk, conf->boot_kernel_enable);
 
-#endif
+    fprintf(stdout, "\n  boot_kernel_enable: %s\n",
+      conf->boot_kernel_enable ? "enable" : "disable");
+
+    fprintf(stdout, "  kernel: %s\n  dtb: %s\n  ramdisk: %s\n\n",
+      conf->kernel, conf->dtb, conf->ramdisk);
+
+  }
+
+
+
   return 0;
 err:
     config_destroy(&cfg);

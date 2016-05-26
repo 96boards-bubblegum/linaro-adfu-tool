@@ -18,6 +18,7 @@
 
 */
 
+#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -770,8 +771,23 @@ void usage(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
+  int opt;
+  char *conf_file = "linaro-adfu-tool.conf";
 
-  if(adfu_parse_conf(&adfu_config)) {
+  while ((opt = getopt(argc, argv, "c:")) != -1) {
+    switch (opt) {
+      case 'c':
+        conf_file = optarg;
+        break;
+      default:
+	usage(argc, argv);
+        return 1;
+     }
+  }
+
+  fprintf(stdout, "Using config file: %s\n", conf_file);
+
+  if(adfu_parse_conf(&adfu_config, conf_file)) {
     usage(argc, argv);
     return 2;
   }
