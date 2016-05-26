@@ -11,3 +11,4 @@ include(CPack)
 
 install (DIRECTORY ${PROJECT_SOURCE_DIR}/firmwares DESTINATION share/linaro-adfu-tool/bg96)
 install (FILES ${PROJECT_SOURCE_DIR}/conf/linaro-adfu-tool.conf DESTINATION /etc)
+install (FILES ${PROJECT_SOURCE_DIR}/conf/51-linaro-adfu-tool.rules DESTINATION /etc/udev/rules.d)
