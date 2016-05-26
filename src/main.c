@@ -574,7 +574,7 @@ char* getbindirectory(char *buf, int size) {
 }
 
 char* find_firmware(const char *filename, char *firmwareFilename, int firmwareFilenameSize) {
-  char *listOfDataDirectory[] = { NULL, "/usr/local/share/linaro-adfu-tool/bg96/firmwares", "/usr/share/linaro-adfu-tool/bg96/firmwares", "./firmwares", "../firmwares" };
+  char *listOfDataDirectory[] = { NULL, "./firmwares", "../firmwares", "/usr/local/share/linaro-adfu-tool/bg96/firmwares", "/usr/share/linaro-adfu-tool/bg96/firmwares"};
   char dataDirectory[4096];
   int i;
   struct stat fileStat;
