@@ -745,17 +745,19 @@ libusb_device_handle* adfu_start(void) {
   writeBinaryFile(handler, '\xcd', 0x13, adfu_config.uboot, 0x10ffffc0u, NULL);
   usleep(100);
 
-  /* download kernel: Image */
-  writeBinaryFile(handler, '\xcd', 0x13, adfu_config.kernel, 0x80000u, NULL);
-  usleep(100);
+  if (adfu_config.boot_kernel_enable == 1) {
+    /* download kernel: Image */
+    writeBinaryFile(handler, '\xcd', 0x13, adfu_config.kernel, 0x80000u, NULL);
+    usleep(100);
 
-  /* download ramdisk */
-  writeBinaryFile(handler, '\xcd', 0x13, adfu_config.ramdisk, 0x1ffffc0u, NULL);
-  usleep(100);
+    /* download ramdisk */
+    writeBinaryFile(handler, '\xcd', 0x13, adfu_config.ramdisk, 0x1ffffc0u, NULL);
+    usleep(100);
 
-  /* download dtb */
-  writeBinaryFile(handler, '\xcd', 0x13, adfu_config.dtb, 0x10000000u, NULL);
-  usleep(100);
+    /* download dtb */
+    writeBinaryFile(handler, '\xcd', 0x13, adfu_config.dtb, 0x10000000u, NULL);
+    usleep(100);
+  }
 
   /* jump to 0x1f000000 (bl31.bin)*/
   unknownCMD50(handler, 0x1f000000u);
