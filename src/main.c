@@ -774,6 +774,9 @@ int main(int argc, char **argv) {
   int opt;
   char *conf_file = "linaro-adfu-tool.conf";
 
+  if (access(conf_file, R_OK))
+    conf_file = "/etc/linaro-adfu-tool.conf";
+
   while ((opt = getopt(argc, argv, "c:")) != -1) {
     switch (opt) {
       case 'c':
