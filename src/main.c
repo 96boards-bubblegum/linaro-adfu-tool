@@ -1,15 +1,16 @@
-/* 
+/*
    Linaro ADFU tools for Linux
    Copyright (C) 2015 Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
+   Copyright (C) 2016 Yixun Lan <dlan@gentoo.org>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or   
+    the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of 
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the  
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
@@ -30,6 +31,8 @@
 
 #include <libusb.h>
 
+#include "conf.h"
+
 #define BOOTLOADER_PACK_STRUCT_OFFSET (0xc00)
 
 struct boot_partition {
@@ -46,19 +49,19 @@ struct bootloader_info {
 };
 
 libusb_context *libusb_ctx=NULL;
-
+struct adfu_conf adfu_config;
 /**
  * Init libusb
  *
  * @return always 0
  */
-int b96_init_usb(void) {
+int adfu_init_usb(void) {
   libusb_init(&libusb_ctx);
   libusb_set_debug(libusb_ctx,3);
   return 0;
 }
 
-int b96_uninit_usb(void) {
+int adfu_uninit_usb(void) {
   libusb_exit(libusb_ctx);
   libusb_ctx=NULL;
   return 0;
@@ -66,11 +69,11 @@ int b96_uninit_usb(void) {
 
 /**
  * Open the device and init it
- * You should call b96_init_usb() first before using this function
+ * You should call adfu_init_usb() first before using this function
  *
  * @return the handler of the device
  */
-libusb_device_handle* b96_init_device(void) {
+libusb_device_handle* adfu_init_device(void) {
   libusb_device_handle *handler=NULL;
   int r1;
   int c1;
@@ -102,7 +105,7 @@ libusb_device_handle* b96_init_device(void) {
     }
     printf ("bNumInterfaces: %d\n", config->bNumInterfaces);
     for (j=0; j<config->bNumInterfaces; j++) {
-      
+
     }
     if (config != NULL) {
       libusb_free_config_descriptor(config);
@@ -124,7 +127,7 @@ libusb_device_handle* b96_init_device(void) {
     }
     error_at_line(0,0,__FILE__,__LINE__,"Info: cannot detach kernel driver: %s", errorStr);
   }
-  
+
   c1 = 0;
   r1 = libusb_get_configuration(handler,  &c1);
   if (r1 != 0) {
@@ -140,11 +143,11 @@ libusb_device_handle* b96_init_device(void) {
   if (r1 != 0) {
     error_at_line(0,0,__FILE__,__LINE__,"Error: cannot claim device interface");
   }
-  
+
   return handler;
 }
 
-void b96_uninit_device(libusb_device_handle *handler) {
+void adfu_uninit_device(libusb_device_handle *handler) {
   int r1;
   r1 = libusb_release_interface(handler, 0);
   if (r1 != 0) {
@@ -177,7 +180,7 @@ void readCSW(libusb_device_handle *handler) {
   int state = 1;
 
   while (state != 0) {
-    
+
     switch(state) {
     case 1:
       r1 = libusb_bulk_transfer(handler, 0x82, buf1, 1024, &transferred, 3000);
@@ -190,7 +193,7 @@ void readCSW(libusb_device_handle *handler) {
       }
       state = 2;
       break;
-      
+
     case 2:
       if (r1 == 0) {
 	state = 3;
@@ -214,7 +217,7 @@ void readCSW(libusb_device_handle *handler) {
 	state = 0;
       }
       break;
-      
+
     case 5:
       r1 = libusb_clear_halt(handler, 0x82);
       if (r1 != 0) {
@@ -243,7 +246,7 @@ void readCSW(libusb_device_handle *handler) {
       }
       break;
 
-    case 8:      
+    case 8:
       r1 = libusb_reset_device(handler);
       if (r1 != 0) {
 	error_at_line(0,0,__FILE__,__LINE__,"Error: cannot reset device");
@@ -273,7 +276,7 @@ void writeBinaryFileSeek(libusb_device_handle *handler,
   int tLen;
 
   memset (data,0,sizeof(data));
-  
+
   file1 = fopen(filename,"rb");
   if (file1 == NULL) {
     error_at_line(0,0,__FILE__,__LINE__,"Error: cannot read file %s",filename);
@@ -322,7 +325,7 @@ void writeBinaryFileSeek(libusb_device_handle *handler,
   data[26] = (sector2/256/256)%256;
   data[27] = (sector2/256/256/256)%256;
 
-  
+
   if (flags != NULL) {
     for (i=28; i<31; i++) {
       data[i] = flags[i-28];
@@ -344,7 +347,7 @@ void writeBinaryFileSeek(libusb_device_handle *handler,
   }
   usleep(100);
 
-  
+
   for (tLen = len; tLen > 0 && !feof(file1); ) {
     int rLen=0;
     if (tLen > sizeof(buf1)) {
@@ -369,7 +372,7 @@ void writeBinaryFileSeek(libusb_device_handle *handler,
     printf ("Bulk transferred %d bytes\n",rLen);
     tLen -= rLen;
   }
-  
+
   fclose(file1);
   file1 = NULL;
 
@@ -386,9 +389,9 @@ void writeBinaryFile(libusb_device_handle *handler,
   struct stat stat1;
   unsigned int len=0;
   int r1;
-  
+
   memset (&stat1,0,sizeof(stat1));
-  
+
   file1 = fopen(filename,"rb");
   if (file1 == NULL) {
     error_at_line(0,0,__FILE__,__LINE__,"Error: cannot read file %s",filename);
@@ -403,7 +406,7 @@ void writeBinaryFile(libusb_device_handle *handler,
   }
   len = (unsigned int)stat1.st_size;
   writeBinaryFileSeek(handler,cmd,sector,filename,0,len,sector2,flags);
-  
+
 }
 
 void unknownCMD07(libusb_device_handle *handler) {
@@ -687,11 +690,11 @@ int writeBootloaderBin(libusb_device_handle *handler, const char *filename) {
   return 0;
 }
 
-libusb_device_handle* start(int argc, char **argv) {
+libusb_device_handle* adfu_start(void) {
   libusb_device_handle *handler = NULL;
   char firmwareFilename[4096];
-  
-  handler = b96_init_device();
+
+  handler = adfu_init_device();
   if (handler == NULL) {
     return NULL;
   }
@@ -716,7 +719,7 @@ libusb_device_handle* start(int argc, char **argv) {
   sleep(1);
 
   libusb_close(handler);
-  handler = b96_init_device();
+  handler = adfu_init_device();
   if (handler == NULL) {
     return NULL;
   }
@@ -738,7 +741,19 @@ libusb_device_handle* start(int argc, char **argv) {
 
   /* load u-boot-dtb.img to 0x10ffffc0. (Note: u-boot is at 0x11000000,
      -0x40 is the header */
-  writeBinaryFile(handler, '\xcd', 0x13, argv[1], 0x10ffffc0u, NULL);
+  writeBinaryFile(handler, '\xcd', 0x13, adfu_config.uboot, 0x10ffffc0u, NULL);
+  usleep(100);
+
+  /* download kernel: Image */
+  writeBinaryFile(handler, '\xcd', 0x13, adfu_config.kernel, 0x80000u, NULL);
+  usleep(100);
+
+  /* download ramdisk */
+  writeBinaryFile(handler, '\xcd', 0x13, adfu_config.ramdisk, 0x1ffffc0u, NULL);
+  usleep(100);
+
+  /* download dtb */
+  writeBinaryFile(handler, '\xcd', 0x13, adfu_config.dtb, 0x10000000u, NULL);
   usleep(100);
 
   /* jump to 0x1f000000 (bl31.bin)*/
@@ -751,25 +766,26 @@ libusb_device_handle* start(int argc, char **argv) {
 }
 
 void usage(int argc, char **argv) {
-  printf ("Usage: %s <u-boot-dtb.img>\n", argv[0]);
+  printf ("Usage: %s [ -c linaro-adfu-tool.conf ]\n", argv[0]);
 }
 
 int main(int argc, char **argv) {
-  if (argc < 2) {
+
+  if(adfu_parse_conf(&adfu_config)) {
     usage(argc, argv);
     return 2;
   }
 
-  b96_init_usb();
-  
+  adfu_init_usb();
+
   libusb_device_handle *handler = NULL;
-  handler = start(argc, argv);
+  handler = adfu_start();
   if (handler != NULL) {
-    b96_uninit_device(handler);
+    adfu_uninit_device(handler);
     handler=NULL;
   }
 
-  b96_uninit_usb();
-  
+  adfu_uninit_usb();
+
   return 0;
 }
