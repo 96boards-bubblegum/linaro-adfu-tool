@@ -21,7 +21,9 @@
 
 ## How to de-brick Bubblegum-96
  1. Setup udev rules on the Host machine, then you don't need root permission to run linaro-adfu-tool.
+    ~~~
     echo "SUBSYSTEM==\"usb\", ATTR{idVendor}==\"10d6\", MODE=\"0666\"" | sudo tee /etc/udev/rules.d/51-adfu.rules
+    ~~~
 
  2. Connect the serial console. Baud rate is 115200,8n1.
 
