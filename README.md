@@ -27,7 +27,7 @@
     Release the button.
     Use "lsusb", you should find a device 10d6:10d6
 
- 4. "sudo ./src/linaro-adfu-tool-bg96 u-boot-dtb.img"
+ 4. "sudo ./src/linaro-adfu-tool u-boot-dtb.img"
 
  5. When seeing u-boot starts running on serial console, press enter to
     break it and entering the u-boot shell.
